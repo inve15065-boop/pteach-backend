@@ -10,33 +10,51 @@ import aiRoutes from "./routes/aiRoutes.js";
 import communityRoutes from "./routes/communityRoutes.js";
 
 dotenv.config();
-connectDB();
 
-const app = express();
+const startServer = async () => {
+  try {
+    // Connect to DB
+    await connectDB();
+    console.log("MongoDB connected ✅");
 
-// Middleware
-app.use(cors({
-  origin: "http://localhost:3000",
-  credentials: true
-}));
+    const app = express();
 
-app.use(express.json());
+    // CORS
+    const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+    app.use(cors({ origin: FRONTEND_URL, credentials: true }));
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/skills", skillRoutes);
-app.use("/api/plans", planRoutes);
-app.use("/api/ai", aiRoutes);
-app.use("/api/community", communityRoutes);
+    app.use(express.json());
 
-// Health check
-app.get("/", (req, res) => {
-  res.json({ message: "PTeach Backend Running 🚀" });
-});
+    // Railway health check (fast, no DB)
+    app.get("/health", (req, res) => {
+      res.status(200).json({ status: "ok", message: "PTeach Backend is live 🚀" });
+    });
 
-// Start server
-const PORT = process.env.PORT || 5000;
+    // Root route (frontend or testing)
+    app.get("/", (req, res) => {
+      res.json({ message: "PTeach Backend Running 🚀" });
+    });
 
-app.listen(PORT, () =>
-  console.log(`Server running on port ${PORT}`)
-);
+    // Your API routes
+    app.use("/api/auth", authRoutes);
+    app.use("/api/skills", skillRoutes);
+    app.use("/api/plans", planRoutes);
+    app.use("/api/ai", aiRoutes);
+    app.use("/api/community", communityRoutes);
+    // --- Add this error handler ---
+    app.use((err, req, res, next) => {
+      console.error(err.stack);
+      res.status(500).json({ status: "error", message: "Something went wrong" });
+    });
+    // -----------------------------
+
+    // Start server
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+  } catch (err) {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  }
+};
+
+startServer();
