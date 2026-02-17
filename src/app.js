@@ -9,6 +9,7 @@ import skillRoutes from "./routes/skillRoutes.js";
 import planRoutes from "./routes/planRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import communityRoutes from "./routes/communityRoutes.js";
+s
 
 dotenv.config();
 connectDB();
@@ -17,9 +18,11 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: "https://pteach-frontend.vercel.app",
+
   credentials: true
 }));
+
 
 app.use(express.json());
 
