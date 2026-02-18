@@ -2,28 +2,14 @@ import mongoose from "mongoose";
 
 const planSchema = new mongoose.Schema(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    skill: {
-      type: String,
-      required: true,
-    },
-    dailyGoal: {
-      type: String,
-      required: true,
-    },
-    reminderTime: {
-      type: String,
-    },
+    title: { type: String, required: true },
+    description: { type: String },
+    skill: { type: mongoose.Schema.Types.ObjectId, ref: "Skill" },
+    startDate: { type: Date },
+    endDate: { type: Date },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-const Plan = mongoose.model("Plan", planSchema);
-
-export default Plan;
+export default mongoose.model("Plan", planSchema);

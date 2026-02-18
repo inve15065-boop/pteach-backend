@@ -1,14 +1,14 @@
 export const askAI = async (req, res) => {
   try {
-    const { message } = req.body;
+    const { question } = req.body;
 
-    if (!message) {
-      return res.status(400).json({ message: "Message is required." });
+    if (!question) {
+      return res.status(400).json({ message: "Question is required." });
     }
 
     let reply = "";
 
-    const lowerMessage = message.toLowerCase();
+    const lowerMessage = question.toLowerCase();
 
     // Smart keyword-based AI
     if (lowerMessage.includes("react")) {

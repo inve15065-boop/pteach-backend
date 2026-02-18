@@ -7,7 +7,7 @@ const router = express.Router();
 // Send message
 router.post("/send", authMiddleware, sendMessage);
 
-// Get messages
-router.get("/messages", authMiddleware, getMessages);
+// Get messages for a skill
+router.get("/messages/:skill", authMiddleware, getMessages);
 
 export default router;
