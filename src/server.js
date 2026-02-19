@@ -23,7 +23,7 @@ const startServer = async () => {
     // CORS - deployed frontend + localhost for local testing
     let FRONTEND_URL = process.env.FRONTEND_URL || "https://pteach-frontend.vercel.app";
     if (!FRONTEND_URL.startsWith("http")) FRONTEND_URL = "https://" + FRONTEND_URL;
-    const allowedOrigins = [FRONTEND_URL, "http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"];
+    const allowedOrigins = [FRONTEND_URL, "http://pteach-frontend.vercel.app", "http://pteach-frontend.vercel.app", "http://pteach-frontend.vercel.app", "http://pteach-frontend.vercel.app"];
     app.use(cors({
       origin: (o, cb) => cb(null, !o || allowedOrigins.includes(o)),
       credentials: true,
