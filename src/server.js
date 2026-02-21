@@ -23,19 +23,45 @@ const startServer = async () => {
     const app = express();
 
     // CORS - deployed frontend + localhost for local testing
-    let FRONTEND_URL = process.env.FRONTEND_URL || "https://pteach-frontend.vercel.app";
-    if (!FRONTEND_URL.startsWith("http")) FRONTEND_URL = "https://" + FRONTEND_URL;
-    const allowedOrigins = Array.from(new Set([
-      FRONTEND_URL,
-      "https://pteach-frontend.vercel.app",
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "https://localhost:3000",
-    ]));
-    app.use(cors({
-      origin: (o, cb) => cb(null, !o || allowedOrigins.includes(o)),
-      credentials: true,
-    }));
+    const normalizeUrl = (u) => {
+      if (!u) return null;
+      return u.startsWith("http") ? u : `https://${u}`;
+    };
+    const FRONTEND_URL_RAW = process.env.FRONTEND_URL || "https://pteach-frontend.vercel.app";
+    const FRONTEND_URL = normalizeUrl(FRONTEND_URL_RAW);
+    const allowedOrigins = Array.from(
+      new Set([
+        FRONTEND_URL,
+        "https://pteach-frontend.vercel.app",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://localhost:3000",
+      ])
+    ).filter(Boolean);
+
+    app.use(
+      cors({
+        origin: (origin, cb) => {
+          if (!origin) return cb(null, true);
+          return cb(null, allowedOrigins.includes(origin));
+        },
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+      })
+    );
+    app.use((req, res, next) => {
+      const origin = req.headers.origin;
+      if (origin && allowedOrigins.includes(origin)) {
+        res.header("Access-Control-Allow-Origin", origin);
+        res.header("Vary", "Origin");
+        res.header("Access-Control-Allow-Credentials", "true");
+        res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+        if (req.method === "OPTIONS") return res.sendStatus(204);
+      }
+      next();
+    });
 
     app.use(express.json());
 
