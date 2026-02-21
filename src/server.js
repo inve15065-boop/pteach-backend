@@ -9,6 +9,8 @@ import planRoutes from "./routes/planRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import communityRoutes from "./routes/communityRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
+import controlRoutes from "./routes/controlRoutes.js";
+import xpRoutes from "./routes/xpRoutes.js";
 
 dotenv.config();
 
@@ -23,7 +25,13 @@ const startServer = async () => {
     // CORS - deployed frontend + localhost for local testing
     let FRONTEND_URL = process.env.FRONTEND_URL || "https://pteach-frontend.vercel.app";
     if (!FRONTEND_URL.startsWith("http")) FRONTEND_URL = "https://" + FRONTEND_URL;
-    const allowedOrigins = [FRONTEND_URL, "http://pteach-frontend.vercel.app", "http://pteach-frontend.vercel.app", "http://pteach-frontend.vercel.app", "http://pteach-frontend.vercel.app"];
+    const allowedOrigins = Array.from(new Set([
+      FRONTEND_URL,
+      "https://pteach-frontend.vercel.app",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://localhost:3000",
+    ]));
     app.use(cors({
       origin: (o, cb) => cb(null, !o || allowedOrigins.includes(o)),
       credentials: true,
@@ -47,6 +55,8 @@ const startServer = async () => {
     app.use("/api/ai", aiRoutes);
     app.use("/api/community", communityRoutes);
     app.use("/api/projects", projectRoutes);
+    app.use("/api/control", controlRoutes);
+    app.use("/api/xp", xpRoutes);
 
     app.use((err, req, res, next) => {
       console.error(err.stack);

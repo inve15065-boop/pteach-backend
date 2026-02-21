@@ -14,6 +14,15 @@ export const getSkills = async (req, res) => {
 export const createSkill = async (req, res) => {
   try {
     const { title, description, framework } = req.body;
+    if (!title || typeof title !== "string" || title.trim().length < 2) {
+      return res.status(400).json({ message: "Title is required and must be at least 2 characters." });
+    }
+    if (framework && typeof framework !== "string") {
+      return res.status(400).json({ message: "Framework must be a string." });
+    }
+    if (description && typeof description !== "string") {
+      return res.status(400).json({ message: "Description must be a string." });
+    }
     const skill = new Skill({
       title,
       description,

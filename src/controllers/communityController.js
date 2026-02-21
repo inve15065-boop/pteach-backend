@@ -4,6 +4,15 @@ import CommunityMessage from "../models/CommunityMessage.js";
 export const sendMessage = async (req, res) => {
   try {
     const { skill, message } = req.body;
+    if (!skill || typeof skill !== "string" || skill.trim().length < 2) {
+      return res.status(400).json({ message: "Skill is required and must be at least 2 characters." });
+    }
+    if (!message || typeof message !== "string" || message.trim().length === 0) {
+      return res.status(400).json({ message: "Message is required." });
+    }
+    if (message.length > 1000) {
+      return res.status(400).json({ message: "Message is too long." });
+    }
     const userId = req.user.id;
 
     if (!skill || !message) {
