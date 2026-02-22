@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { logHistory } from "../utils/historyLogger.js";
 
 // Generate JWT
 const generateToken = (id) => {
@@ -9,10 +10,12 @@ const generateToken = (id) => {
   });
 };
 
-// REGISTER
+// REGISTER (validation done in authValidation middleware)
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const name = (req.body.name || "").trim();
+    const email = (req.body.email || "").trim().toLowerCase();
+    const password = req.body.password;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -28,8 +31,16 @@ export const registerUser = async (req, res) => {
     });
 
     const token = generateToken(user._id);
+    logHistory(user._id, "login", {}, "User registered").catch(() => {});
+    const populated = await User.findById(user._id).select("-password").populate("selectedSkill");
     res.status(201).json({
-      user: { _id: user._id, name: user.name, email: user.email },
+      user: {
+        _id: populated._id,
+        name: populated.name,
+        email: populated.email,
+        role: populated.role,
+        selectedSkill: populated.selectedSkill,
+      },
       token,
     });
 
@@ -41,24 +52,57 @@ export const registerUser = async (req, res) => {
 // GET ME (protected - for AuthContext)
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user.id).select("-password").populate("selectedSkill");
     res.json({ user });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// LOGIN
+// SELECT SKILL (for new users - saves primary skill to profile)
+export const selectSkill = async (req, res) => {
+  try {
+    const { skillId } = req.body;
+    if (!skillId) {
+      return res.status(400).json({ message: "Skill ID is required." });
+    }
+    const Skill = (await import("../models/Skill.js")).default;
+    const skill = await Skill.findOne({ _id: skillId, isPredefined: true });
+    if (!skill) {
+      return res.status(404).json({ message: "Invalid or non-predefined skill." });
+    }
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { selectedSkill: skillId },
+      { new: true }
+    ).select("-password").populate("selectedSkill");
+    logHistory(req.user.id, "skill_change", { skillId }, "Primary skill changed").catch(() => {});
+    res.status(200).json({ user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// LOGIN (validation done in authValidation middleware)
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = (req.body.email || "").trim().toLowerCase();
+    const password = req.body.password;
 
     const user = await User.findOne({ email });
 
     if (user && (await bcrypt.compare(password, user.password))) {
+      logHistory(user._id, "login", {}, "User logged in").catch(() => {});
       const token = generateToken(user._id);
-      res.json({
-        user: { _id: user._id, name: user.name, email: user.email },
+      const populated = await User.findById(user._id).select("-password").populate("selectedSkill");
+    res.json({
+        user: {
+          _id: populated._id,
+          name: populated.name,
+          email: populated.email,
+          role: populated.role,
+          selectedSkill: populated.selectedSkill,
+        },
         token,
       });
     } else {

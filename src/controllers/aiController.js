@@ -1,3 +1,7 @@
+import User from "../models/User.js";
+import { logHistory } from "../utils/historyLogger.js";
+import { getAdaptiveContext } from "../services/aiService.js";
+
 export const askAI = async (req, res) => {
   try {
     const { question } = req.body;
@@ -7,6 +11,16 @@ export const askAI = async (req, res) => {
 
     const apiKey = process.env.OPENAI_API_KEY;
     const model = process.env.AI_MODEL || "gpt-4o-mini";
+
+    let systemContent = "You are a helpful tutor focused on programming and business skills. Give concise, accurate answers. When code is helpful, include minimal examples.";
+    try {
+      const user = await User.findById(req.user.id).populate("selectedSkill");
+      if (user?.selectedSkill?.title) {
+        systemContent = await getAdaptiveContext(req.user.id, user.selectedSkill.title);
+      }
+    } catch (e) {
+      // use default
+    }
 
     if (apiKey) {
       try {
@@ -19,7 +33,7 @@ export const askAI = async (req, res) => {
           body: JSON.stringify({
             model,
             messages: [
-              { role: "system", content: "You are a helpful tutor focused on programming and business skills. Give concise, accurate answers. When code is helpful, include minimal examples." },
+              { role: "system", content: systemContent },
               { role: "user", content: question },
             ],
             temperature: 0.7,
@@ -31,6 +45,7 @@ export const askAI = async (req, res) => {
         }
         const data = await response.json();
         const reply = data?.choices?.[0]?.message?.content?.trim() || "I couldn't generate an answer.";
+        logHistory(req.user.id, "ai_chat", { question, replyLength: reply.length }, "AI chat").catch(() => {});
         return res.json({ reply, provider: "openai", model });
       } catch (e) {
         // Fall back to keyword responder if OpenAI fails
@@ -51,6 +66,7 @@ export const askAI = async (req, res) => {
     } else {
       reply = "Tell me more about what you want to learn, and I’ll guide you.";
     }
+    logHistory(req.user.id, "ai_chat", { question, replyLength: reply.length }, "AI chat (keyword)").catch(() => {});
     return res.json({ reply, provider: "keyword" });
   } catch (error) {
     console.error(error);

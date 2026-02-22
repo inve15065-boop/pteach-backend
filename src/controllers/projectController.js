@@ -1,35 +1,17 @@
-import SkillResource from "../models/SkillResource.js";
+import { generateCodeProject } from "../utils/codeGenerator.js";
 
-// Mock AI function to generate code
-const generateCodeProject = async (skill, topic) => {
-  // In real implementation, call OpenAI/Kiro API here
-  if (skill.toLowerCase() === "web development") {
-    return `
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>${topic}</title>
-    <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
-    <h1>${topic} Project</h1>
-    <p>This is an auto-generated web project for ${skill}.</p>
-  </body>
-</html>
-`;
-  } else {
-    return `// Example project for ${skill}: ${topic}\nconsole.log("Hello World!");`;
-  }
-};
-
-// Controller to return project code
+// Controller delegates to utils layer
 export const generateProject = async (req, res) => {
   try {
     const { skill, topic } = req.body;
-    if (!skill || !topic)
-      return res.status(400).json({ message: "Skill and topic are required" });
+    if (!skill || typeof skill !== "string" || !skill.trim()) {
+      return res.status(400).json({ message: "Skill is required." });
+    }
+    if (!topic || typeof topic !== "string" || !topic.trim()) {
+      return res.status(400).json({ message: "Topic is required." });
+    }
 
-    const code = await generateCodeProject(skill, topic);
+    const code = await generateCodeProject(skill.trim(), topic.trim());
     res.status(200).json({ code });
   } catch (err) {
     console.error(err);

@@ -11,18 +11,24 @@ import communityRoutes from "./routes/communityRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import controlRoutes from "./routes/controlRoutes.js";
 import xpRoutes from "./routes/xpRoutes.js";
+import toolRoutes from "./routes/toolRoutes.js";
+import historyRoutes from "./routes/historyRoutes.js";
 
 dotenv.config();
 
 const startServer = async () => {
   try {
-    // Connect to DB
+    if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
+      console.error("FATAL: JWT_SECRET is required in production.");
+      process.exit(1);
+    }
+
     await connectDB();
     console.log("MongoDB connected ✅");
 
     const app = express();
 
-    // CORS - deployed frontend + localhost for local testing
+    // CORS - whitelist only; full protocol URLs; no wildcard with credentials
     const normalizeUrl = (u) => {
       if (!u) return null;
       return u.startsWith("http") ? u : `https://${u}`;
@@ -50,20 +56,17 @@ const startServer = async () => {
         allowedHeaders: ["Content-Type", "Authorization"],
       })
     );
-    app.use((req, res, next) => {
-      const origin = req.headers.origin;
-      if (origin && allowedOrigins.includes(origin)) {
-        res.header("Access-Control-Allow-Origin", origin);
-        res.header("Vary", "Origin");
-        res.header("Access-Control-Allow-Credentials", "true");
-        res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-        res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-        if (req.method === "OPTIONS") return res.sendStatus(204);
-      }
-      next();
-    });
 
     app.use(express.json());
+
+    try {
+      const rateLimit = (await import("express-rate-limit")).default;
+      app.use("/api/", rateLimit({ windowMs: 15 * 60 * 1000, max: 200, message: { status: "error", message: "Too many requests." } }));
+      app.use("/api/auth/login", rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }));
+      app.use("/api/auth/register", rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }));
+    } catch (e) {
+      // Rate limit optional
+    }
 
     // Health check
     app.get("/health", (req, res) => {
@@ -83,6 +86,8 @@ const startServer = async () => {
     app.use("/api/projects", projectRoutes);
     app.use("/api/control", controlRoutes);
     app.use("/api/xp", xpRoutes);
+    app.use("/api/tools", toolRoutes);
+    app.use("/api/history", historyRoutes);
 
     app.use((err, req, res, next) => {
       console.error(err.stack);

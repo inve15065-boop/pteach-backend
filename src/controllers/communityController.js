@@ -1,4 +1,5 @@
 import CommunityMessage from "../models/CommunityMessage.js";
+import { logHistory } from "../utils/historyLogger.js";
 
 // Send a new message
 export const sendMessage = async (req, res) => {
@@ -11,21 +12,16 @@ export const sendMessage = async (req, res) => {
       return res.status(400).json({ message: "Message is required." });
     }
     if (message.length > 1000) {
-      return res.status(400).json({ message: "Message is too long." });
+      return res.status(400).json({ message: "Message is too long (max 1000 characters)." });
     }
     const userId = req.user.id;
-
-    if (!skill || !message) {
-      return res.status(400).json({
-        message: "Skill and message are required."
-      });
-    }
 
     const newMessage = await CommunityMessage.create({
       sender: userId,
       skill,
       message,
     });
+    logHistory(userId, "community_chat", { skill, messageLength: message.length }, "Community message").catch(() => {});
 
     res.status(201).json({
       message: "Message sent successfully.",
