@@ -12,7 +12,7 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 router.get("/", authMiddleware, getSkills);
-router.get("/predefined", authMiddleware, getPredefinedSkills);
+router.get("/predefined", getPredefinedSkills); // Public - needed for skill-selection page
 router.get("/:id", authMiddleware, getSkillById);
 router.post("/", authMiddleware, createSkill);
 router.put("/:id", authMiddleware, updateSkill);
