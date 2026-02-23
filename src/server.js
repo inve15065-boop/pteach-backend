@@ -72,6 +72,9 @@ const startServer = async () => {
     app.get("/health", (req, res) => {
       res.status(200).json({ status: "ok", message: "PTeach Backend is live 🚀" });
     });
+    app.get("/api/health", (req, res) => {
+      res.status(200).json({ status: "ok", message: "PTeach API is live 🚀" });
+    });
 
     app.get("/", (req, res) => {
       res.json({ message: "PTeach Backend Running 🚀" });
@@ -88,6 +91,25 @@ const startServer = async () => {
     app.use("/api/xp", xpRoutes);
     app.use("/api/tools", toolRoutes);
     app.use("/api/history", historyRoutes);
+    // Aliases without /api prefix (for deployments expecting root-mounted routes)
+    app.use("/auth", authRoutes);
+    app.use("/skills", skillRoutes);
+    app.use("/plans", planRoutes);
+    app.use("/ai", aiRoutes);
+    app.use("/community", communityRoutes);
+    app.use("/projects", projectRoutes);
+    app.use("/control", controlRoutes);
+    app.use("/xp", xpRoutes);
+    app.use("/tools", toolRoutes);
+    app.use("/history", historyRoutes);
+    // API 404 helper
+    app.use(/^\/api(\/|$)/, (req, res) => {
+      res.status(404).json({
+        status: "error",
+        message: "API endpoint not found",
+        path: req.originalUrl,
+      });
+    });
 
     app.use((err, req, res, next) => {
       console.error(err.stack);
